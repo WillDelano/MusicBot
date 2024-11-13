@@ -20,6 +20,9 @@ YDL_OPTIONS = {
     'extractaudio': True,  # Only extract audio
     'audioformat': 'mp3',  # Optional: You can specify 'mp3' or 'opus'
     'audioquality': '192K'  # Audio quality
+    'cachedir': os.path.expanduser("~/.cache/yt-dlp"),  # Optional: Specify cache directory
+    'username': 'oauth2',
+    'password': ''  # Required for OAuth2 login
 }
 
 class MusicBot(commands.Cog):

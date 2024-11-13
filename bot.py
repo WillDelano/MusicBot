@@ -20,9 +20,6 @@ YDL_OPTIONS = {
     'extractaudio': True,  # Only extract audio
     'audioformat': 'mp3',  # Optional: You can specify 'mp3' or 'opus'
     'audioquality': '192K'  # Audio quality
-    'cachedir': os.path.expanduser("~/.cache/yt-dlp"),  # Optional: Specify cache directory
-    'username': 'oauth2',
-    'password': ''  # Required for OAuth2 login
 }
 
 class MusicBot(commands.Cog):
@@ -140,7 +137,7 @@ class MusicBot(commands.Cog):
             ctx.voice_client.play(source, after=lambda e: self.cleanup(ctx, path))
             self.current_path = path
 
-            while ctx.voice_client.is_playing() and not pause:
+            while ctx.voice_client.is_playing() and not self.pause:
                 await asyncio.sleep(1)
             
             if self.queue:
@@ -296,6 +293,6 @@ client = commands.Bot(command_prefix="!", intents=intents)
 
 async def main():
     await client.add_cog(MusicBot(client))
-    await client.start('MTAxNDYzNzI2NjY1Nzg3Mzk4Mg.G1NyM0.Dilmif0rXRGBNYZKmrmdKMrShrQct3_DmGWgcA')
+    await client.start('tets')
 
 asyncio.run(main())

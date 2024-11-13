@@ -111,7 +111,7 @@ class MusicBot(commands.Cog):
                     self.queue.append((file_path, song))
 
         if ctx.voice_client.is_playing():
-            await ctx.send(f'Added to queue: **{song['title']}**')
+            await ctx.send(f"Added to queue: **{song['title']}**")
         if not ctx.voice_client.is_playing():
             await self.play_next(ctx)
 

@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 import yt_dlp
 import asyncio
+#pynacl library is required sometimes for !play to work
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -256,11 +257,9 @@ class MusicBot(commands.Cog):
             return
 
         help_message = """
-        **🎶 EJ's Little Boy's Commands 🎶**
+        **🎶 EJ's Commands 🎶**
 
-        **Current issues:** Playlists over ~50 songs don't play; The bot must be run locally on a computer.
-
-        Here’s a list of all the commands you can force EJ's small child to do:
+    **Current issues:** Playlists over ~30 songs don't play
 
         - **!play [song/playlist name or URL]**: Plays a song or adds it to the queue if one is playing. If you provide a YouTube playlist URL, it will queue up all songs in the playlist.
 
@@ -276,9 +275,9 @@ class MusicBot(commands.Cog):
 
         - **!current**: Shows information about the currently playing song. Displays details like title, duration, views, and more.
 
-        ---
+    ---
 
-        *Enjoy using and abusing EJ's little boy! 😈*
+    *Enjoy using and abusing EJ (2)!  😈*
         """
         await ctx.send(help_message)
 
@@ -293,6 +292,6 @@ client = commands.Bot(command_prefix="!", intents=intents)
 
 async def main():
     await client.add_cog(MusicBot(client))
-    await client.start('tets')
+    await client.start('MTAxNDYzNzI2NjY1Nzg3Mzk4Mg.GObs5T.lhPOAqQbL8mpfYBWqgdQLxqtmRY0_UZZ3hzje')
 
 asyncio.run(main())

@@ -138,7 +138,7 @@ class MusicBot(commands.Cog):
             ctx.voice_client.play(source, after=lambda e: self.cleanup(ctx, path))
             self.current_path = path
 
-            while ctx.voice_client.is_playing() and not self.pause:
+            while ctx.voice_client.is_playing() or not self.pause:
                 await asyncio.sleep(1)
             
             if self.queue:
@@ -225,7 +225,7 @@ class MusicBot(commands.Cog):
 
             self.queue.clear()
             await ctx.send("Stopped all playback and cleared queue.")
-            await ctx.voice_client.disconnect()
+        await ctx.voice_client.disconnect()
 
 
     #current song stats

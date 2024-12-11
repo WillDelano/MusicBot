@@ -60,7 +60,7 @@ class MusicBot(commands.Cog):
                 "views" : None
                 }
 
-                if "list=" in search:
+                if "list=" in search and "v=" not in search:
                     try:
                         print(f"Playlist URL detected: {search}")
 
@@ -111,9 +111,9 @@ class MusicBot(commands.Cog):
 
                     self.queue.append((file_path, song))
 
-        if ctx.voice_client.is_playing():
+        if ctx.voice_client.is_playing() or self.pause:
             await ctx.send(f"Added to queue: **{song['title']}**")
-        if not ctx.voice_client.is_playing():
+        if not ctx.voice_client.is_playing() and not self.pause:
             await self.play_next(ctx)
 
 
@@ -138,7 +138,7 @@ class MusicBot(commands.Cog):
             ctx.voice_client.play(source, after=lambda e: self.cleanup(ctx, path))
             self.current_path = path
 
-            while ctx.voice_client.is_playing() or not self.pause:
+            while ctx.voice_client.is_playing() or self.pause:
                 await asyncio.sleep(1)
             
             if self.queue:
@@ -204,8 +204,8 @@ class MusicBot(commands.Cog):
             return
         
         if ctx.voice_client and not ctx.voice_client.is_playing():
-            self.pause = False
             ctx.voice_client.resume()
+            self.pause = False
             await ctx.send("Resumed the current song.")
 
 
@@ -216,7 +216,7 @@ class MusicBot(commands.Cog):
             await self.wrong_channel(ctx)
             return
         
-        if ctx.voice_client and ctx.voice_client.is_playing():
+        if ctx.voice_client:
             ctx.voice_client.stop()
 
             #delete all remaining downloaded songs

@@ -433,6 +433,6 @@ async def main():
     logger.addHandler(discord_handler)
 
     await client.add_cog(MusicBot(client))
-    await client.start('MTAxNDYzNzI2NjY1Nzg3Mzk4Mg.GObs5T.lhPOAqQbL8mpfYBWqgdQLxqtmRY0_UZZ3hzje')
+    await client.start('token')
 
 asyncio.run(main())

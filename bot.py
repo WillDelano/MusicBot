@@ -94,7 +94,7 @@ class MusicBot(commands.Cog):
                         await ctx.send(f"Error processing the playlist: {str(e)}")
 
                 else:
-                    if 'https:://' in search:
+                    if 'https://' in search:
                         info = ydl.extract_info(search, download=True)
                     else:
                         info = ydl.extract_info(f"ytsearch:{search}", download=True)

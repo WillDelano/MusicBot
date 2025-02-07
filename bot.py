@@ -4,15 +4,148 @@ import discord
 from discord.ext import commands
 import yt_dlp
 import asyncio
+import logging
+import time
+import re
 #pynacl library is required sometimes for !play to work
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
 
+#create client with intents and command prefix
+client = commands.Bot(command_prefix="!", intents=intents)
+
+class DiscordLogHandler(logging.Handler):
+    def __init__(self, bot, channel_id):
+        super().__init__()
+        self.bot = bot
+        self.channel_id = channel_id
+
+    async def send_log(self, log_entry):
+        await self.bot.wait_until_ready()  # Ensure the bot is fully connected
+        channel = self.bot.get_channel(self.channel_id)
+        if channel:
+            await channel.send(f"```{log_entry}```")
+
+    def emit(self, record):
+        log_entry = self.format(record)
+        # Use asyncio.create_task to schedule the coroutine
+        asyncio.create_task(self.send_log(log_entry))
+
+class YTDLPLogger:
+    def __init__(self, bot, log_channel_id, delay=5):
+        self.bot = bot
+        self.log_channel_id = log_channel_id
+        self.bot_channel_id = 1047368874758242334
+        self.delay = delay  # Interval in seconds to send logs
+        self.download_delay = 1 #interval in sec to send download progress
+        self.log_buffer = []  # Buffer to accumulate logs
+        self.last_sent_time = time.time()  # Track last sent time
+        self.last_sent_download_time = time.time()
+        self.lock = asyncio.Lock()
+        self.download_lock = asyncio.Lock()
+        self.download_buffer = ""
+        self.downloading_message = None #store the downloading message for editing
+
+    #send logs and clear buffer
+    """async def send_logs(self):
+        if self.log_buffer:
+            logs = "\n".join(self.log_buffer)
+            channel = self.bot.get_channel(self.log_channel_id)
+            if channel:
+                await channel.send(logs)
+            self.log_buffer.clear()"""
+
+    async def send_progress(self):
+        if self.download_buffer:
+            progress = self.download_buffer
+            channel = self.bot.get_channel(self.bot_channel_id)
+                
+            if channel:
+                #if the first progress message hasnt been sent
+                if self.downloading_message is None:
+                    self.downloading_message = await channel.send(progress)
+                #edit the already sent progress message
+                else:
+                    await self.downloading_message.edit(content=progress)
+
+            self.download_buffer = ""
+
+    #send logs every 5 seconds
+    """async def cont_timer(self):
+        while True and self.log_buffer:
+            await asyncio.sleep(self.delay)
+            await self.send_logs()"""
+
+    """async def download_cont_timer(self):
+        while True and self.download_buffer:
+            await asyncio.sleep(self.download_delay)
+            await self.send_progress()"""
+
+    #add log to buffer and start timer
+    """async def add_log(self, msg):
+        self.log_buffer.append(msg)
+
+        #lock to prevent race condition
+        async with self.lock:
+            current_time = time.time()
+            elapsed = current_time - self.last_sent_time
+
+            if elapsed >= self.delay:
+                await self.cont_timer()
+                self.last_sent_time = current_time  #reset the last sent time"""
+
+    #add progress to download buffer and start timer
+    async def add_progress(self, msg):
+        async with self.download_lock:
+            current_time = time.time()
+            elapsed = current_time - self.last_sent_download_time
+
+            if elapsed >= self.download_delay:
+                self.download_buffer = msg
+                await self.send_progress() 
+                self.last_sent_download_time = current_time  
+
+    def debug(self, msg):
+        """asyncio.create_task(self.add_log(f"``` LOG: {msg}```"))"""
+        print(msg)
+
+    def warning(self, msg):
+        """asyncio.create_task(self.add_log(f"``` WARNING: {msg}```"))"""
+        print(msg)
+
+    def error(self, msg):
+        """asyncio.create_task(self.add_log(f"``` ERROR: {msg}```"))"""
+        print(msg)
+
+    def my_hook(self, d):
+        asyncio.create_task(self._my_hook(d))  # Create a task to call the async method
+
+    def remove_ansi_escape_sequences(self, text):
+        ansi_escape = re.compile(r'\x1b\[[0-9;]*[mK]')
+        return ansi_escape.sub('', text)
+
+    #function to send progress updates
+    async def _my_hook(self, d):
+        """if d['status'] == 'downloading':
+            msg = f"Downloading: {d['_percent_str']} at {d['_speed_str']} ETA: {d['_eta_str']}"
+            print(msg)
+            msg = self.remove_ansi_escape_sequences(msg)  #remove any ANSI escape sequences
+            await self.add_progress(f"``` PROGRESS: {msg}```")
+                
+        elif d['status'] == 'finished':
+            msg = f"Download complete: {d['filename']}"
+            print(msg)
+            msg = self.remove_ansi_escape_sequences(msg)  #remove any ANSI escape sequences
+            await self.add_progress(f"``` PROGRESS: {msg}```")"""
+
 FFMPEG_OPTIONS = {
     'options': '-vn -b:a 192k -ar 48000'  # Set audio bitrate to 192 kbps and sample rate to 48 kHz
 }
+
+log_channel_id = 1316373392143810610
+logger = YTDLPLogger(client, 1316373392143810610)
 
 YDL_OPTIONS = {
     'format': 'bestaudio/best',
@@ -20,7 +153,9 @@ YDL_OPTIONS = {
     'quiet': False,
     'extractaudio': True,  # Only extract audio
     'audioformat': 'mp3',  # Optional: You can specify 'mp3' or 'opus'
-    'audioquality': '192K'  # Audio quality
+    'audioquality': '192K',  # Audio quality
+    'logger': YTDLPLogger(client, log_channel_id),  # Use the custom logger
+    'progress_hooks': [logger.my_hook]
 }
 
 class MusicBot(commands.Cog):
@@ -289,12 +424,15 @@ class MusicBot(commands.Cog):
     async def wrong_channel(self, ctx):
         await ctx.reply("Wrong channel. Now EJ's going to touch me. Thanks.")
 
-
-#create client with intents and command prefix
-client = commands.Bot(command_prefix="!", intents=intents)
-
 async def main():
+    #initialize the bot and custom logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger()
+    discord_handler = DiscordLogHandler(client, channel_id=1316373392143810610)
+    discord_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(discord_handler)
+
     await client.add_cog(MusicBot(client))
-    await client.start('MTAxNDYzNzI2NjY1Nzg3Mzk4Mg.GObs5T.lhPOAqQbL8mpfYBWqgdQLxqtmRY0_UZZ3hzje')
+    await client.start('token')
 
 asyncio.run(main())
